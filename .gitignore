@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Secrets
+.env
+
+# Data: filings and derived tables stay local; the manifest is versioned
+data/**
+!data/
+!data/bronze/
+!data/bronze/manifest.csv
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
