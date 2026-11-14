@@ -32,6 +32,10 @@ One entry per design choice: context, options, choice, and why. Include measured
 
 **Why.** Every company in scope is listed on NSE, so the symbol always exists and is unique. It's also what an analyst types, and what NSE's XBRL listing is filtered by. A made-up CIN would be a fabricated value in a project whose whole point is traceability. ISIN works too but is unreadable in a query.
 
+**Evidence from the XBRL (2026-11-14).** The BRSR XBRL files confirm that CIN is unreliable for these banks: the "CIN" fields hold placeholders such as `X00000XX0000XXX000000` (Indian Bank FY25), `A00000AA0000AAA000000` (SBI) and well-formed but fictitious values like `L01234KA2023PTC567891` (Bank of Baroda). Code that joined on CIN would silently mismatch. `NSESymbol` is a fact in the FY 2025-26 taxonomy, which also makes the symbol the natural join key with XBRL.
+
+**Caveat: symbols change on renames.** LTIMindtree became LTM Limited in FY 2025-26 and its NSE symbol changed from `LTIM` to `LTM`. We use the *current* symbol for both years, and the manifest keeps each filing's own `company_name`.
+
 ---
 
 ## D003 — Target FY 2024-25 and FY 2025-26 (M0, 2026-11-13)
@@ -42,4 +46,16 @@ One entry per design choice: context, options, choice, and why. Include measured
 
 **Why.** An analyst would ask about the latest filing first. Year-on-year questions still need exactly two years.
 
-**Corpus as of this decision.** 11 companies, 21 PDFs. IT: TCS, Infosys, Tech Mahindra, Persistent, LTIMindtree (renamed LTM Limited in FY26), Coforge (FY 2024-25 only so far). Banks: Axis, Federal, IndusInd, Bank of Baroda, Indian Bank. SBI is in the target list but not yet downloaded. No XBRL yet.
+**Corpus (updated 2026-11-14).** Complete: 12 companies × 2 years, 24 PDFs and 24 XBRL files (one Inline XBRL, see D004). IT: TCS, Infosys, Tech Mahindra, Persistent, LTM (formerly LTIMindtree), Coforge. Banks: SBI, Axis, Federal, IndusInd, Bank of Baroda, Indian Bank. Boundary: TCS, Infosys, Tech Mahindra, Persistent and LTM report consolidated; Coforge and all banks report standalone.
+
+---
+
+## D004 — Keep Inline XBRL as downloaded (M0, 2026-11-14)
+
+**Context.** LTIMindtree's FY 2024-25 BRSR XBRL isn't on NSE under the new `LTM` symbol, and BSE offers it only as Inline XBRL (`.html`): the same `in-capmkt` facts embedded in XHTML. The other 23 XBRL files are plain `.xml` instances.
+
+**Options.** (1) Convert it to a plain `.xml` instance before storing it in bronze. (2) Store the `.html` file unchanged and parse both formats into the same `xbrl_facts` table.
+
+**Choice.** Option 2. The manifest accepts `.xml` or `.html` for `doc_type = xbrl`.
+
+**Why.** Bronze is raw and immutable: its sha256 must match what the exchange served. The conversion is parsing, so it belongs in the silver step, where it can be tested. Cross-check: this file's Scope 1 (1,542 tCO2e) and Scope 2 (18,239 tCO2e) match the prior-year values in LTM's FY 2025-26 XBRL exactly.

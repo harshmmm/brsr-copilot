@@ -20,7 +20,8 @@ COLUMNS = [
     "sha256",
     "downloaded_on",
 ]
-EXTENSIONS = {"pdf": ".pdf", "xbrl": ".xml"}
+# XBRL arrives as a plain instance (.xml) or as Inline XBRL embedded in XHTML (.html).
+EXTENSIONS = {"pdf": (".pdf",), "xbrl": (".xml", ".html")}
 DATA_DIRS = ("filings", "xbrl")
 
 
@@ -82,7 +83,8 @@ class ManifestRow(BaseModel):
     def _extension_matches_type(self) -> "ManifestRow":
         expected = EXTENSIONS[self.doc_type]
         if not self.file_path.lower().endswith(expected):
-            raise ValueError(f"{self.doc_type} file must end in {expected}: {self.file_path}")
+            allowed = " or ".join(expected)
+            raise ValueError(f"{self.doc_type} file must end in {allowed}: {self.file_path}")
         return self
 
 

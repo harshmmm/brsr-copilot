@@ -102,6 +102,18 @@ def test_empty_cin_is_allowed_for_nationalised_banks(bronze: Path) -> None:
     assert problems == [] and rows[0].company_cin == ""
 
 
+@pytest.mark.parametrize("path", ["xbrl/ltm_2024-25.xml", "xbrl/ltm_2024-25.html"])
+def test_xbrl_accepts_plain_and_inline(bronze: Path, path: str) -> None:
+    row = make_row(doc_type="xbrl", file_path=path)
+    rows, problems = read_manifest(write_manifest(bronze, [row]))
+    assert problems == [] and len(rows) == 1
+
+
+def test_pdf_rejects_html(bronze: Path) -> None:
+    _, problems = read_manifest(write_manifest(bronze, [make_row(file_path="filings/x.html")]))
+    assert len(problems) == 1 and ".pdf" in problems[0]
+
+
 def test_missing_file(bronze: Path) -> None:
     rows, _ = read_manifest(write_manifest(bronze, [make_row()]))
     assert check_manifest(rows, bronze) == ["missing file: filings/infosys_2024-25.pdf"]
