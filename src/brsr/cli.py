@@ -84,6 +84,8 @@ def parse(
         raise typer.Exit(2)
 
     typer.echo(f"Parsing {len(rows)} PDF(s) with {mod.version()}")
+    if hasattr(mod, "warmup"):
+        mod.warmup()  # keep one-off model loading out of the per-filing timings
     report = parse_filings(
         rows, manifest.parent, silver, mod.parse, mod.NAME, mod.version(), force, typer.echo
     )
