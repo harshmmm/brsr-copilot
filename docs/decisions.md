@@ -59,3 +59,15 @@ One entry per design choice: context, options, choice, and why. Include measured
 **Choice.** Option 2. The manifest accepts `.xml` or `.html` for `doc_type = xbrl`.
 
 **Why.** Bronze is raw and immutable: its sha256 must match what the exchange served. The conversion is parsing, so it belongs in the silver step, where it can be tested. Cross-check: this file's Scope 1 (1,542 tCO2e) and Scope 2 (18,239 tCO2e) match the prior-year values in LTM's FY 2025-26 XBRL exactly.
+
+---
+
+## D005 — Add pyarrow, pinned to an exact version (M1, 2026-11-16)
+
+**Context.** Silver and gold are Delta tables written with `deltalake` and queried with DuckDB. Both libraries exchange data as Arrow tables. `pyarrow` was not in the brief's stack.
+
+**Options.** (1) Rely on whatever Arrow implementation `deltalake` pulls in transitively. (2) Add `pyarrow` as a direct dependency with a range. (3) Add it pinned to one version.
+
+**Choice.** Option 3: `pyarrow==26.0.1`.
+
+**Why.** We build Arrow tables ourselves before writing to Delta, and DuckDB reads Delta back through Arrow, so `pyarrow` is a direct dependency, not an incidental one. Pinning it exactly keeps the Arrow-to-Delta type mapping stable between runs (e.g. `string` vs `large_string` vs `string_view`). A silent change there alters the Delta table schema and makes a later overwrite fail with a schema mismatch, or worse, makes two runs produce different files. Upgrades will be deliberate: bump the pin, rerun the tests and one parse, and commit.
