@@ -98,9 +98,9 @@ Mixed (routed to both, then combined):
 
 ```
             ┌────────────── BRONZE (raw, immutable) ──────────────┐
- NSE/BSE ──▶│ filings/*.pdf   xbrl/*.xml   manifest.csv           │
+ NSE/BSE ──▶│ filings/*.pdf   xbrl/*.xml|html  manifest.csv       │
             └──────────────┬──────────────────────┬───────────────┘
-                           │ parse (PyMuPDF/Docling)  │ parse XBRL
+                           │ parse (Docling, D006) │ parse XBRL
             ┌──────────────▼──────────────────────▼───────────────┐
             │ SILVER: pages · tables · chunks      xbrl_facts      │
             └───────┬───────────────────────┬─────────────────────┘
@@ -118,7 +118,7 @@ Mixed (routed to both, then combined):
                          Streamlit UI  ·  eval/ reports
 ```
 
-**Stack:** Python 3.11+, uv, Delta tables via `deltalake` (delta-rs) queried with DuckDB, PyMuPDF and Docling, Pydantic v2, Gemini through the `google-genai` SDK behind a client that can swap providers, `sentence-transformers` (bge-small-en-v1.5), Qdrant in local mode, `bm25s`, a small cross-encoder reranker (ms-marco-MiniLM), Streamlit, pytest, ruff, GitHub Actions.
+**Stack:** Python 3.12, uv, Delta tables via `deltalake` (delta-rs) queried with DuckDB through `pyarrow` (pinned, D005), Docling for PDF parsing (PyMuPDF kept for comparison, D006), Pydantic v2, Gemini through the `google-genai` SDK behind a client that can swap providers, `sentence-transformers` (bge-small-en-v1.5), Qdrant in local mode, `bm25s`, a small cross-encoder reranker (ms-marco-MiniLM), Streamlit, pytest, ruff, GitHub Actions.
 
 **Why Delta on a laptop:** it's the same bronze/silver/gold pattern as production Databricks, running locally. That makes the step from this project to work at Tibil or ABG obvious.
 
@@ -166,10 +166,10 @@ Mixed (routed to both, then combined):
 
 ## 8. Key decisions (to record in `docs/decisions.md` as you make them)
 
-1. **Parser:** PyMuPDF vs Docling on BRSR tables. Measure on 3 filings; don't assume.
+1. **Parser:** PyMuPDF vs Docling on BRSR tables. Measure on 3 filings; don't assume. *Decided 2026-11-24: Docling (D006): equal recall, 17/19 vs 10/19 table rows intact, ~9× slower.*
 2. **Granularity:** extract per section (e.g. the Principle 6 environment section), not the whole document at once. Smaller context gives better accuracy and costs less.
 3. **Unit normalisation is done in code, not by the LLM.** The LLM returns the raw value and unit; deterministic rules convert them. *(Same principle as the Safety platform: the LLM extracts, rules decide, so the result is auditable.)*
-4. **Boundary:** extract both standalone and consolidated figures when present, and default comparisons to standalone.
+4. **Boundary:** extract both standalone and consolidated figures when present, and default comparisons to standalone. *Open: most IT filings report only consolidated (see `next.md`); decide in M2.*
 5. **Provider abstraction:** Gemini by default; Ollama (local) or Bedrock as fallbacks through one interface.
 6. **When XBRL and the LLM disagree:** treat XBRL as the truth for evaluation; log the disagreement as an evaluation finding, don't hide it.
 
@@ -177,9 +177,9 @@ Mixed (routed to both, then combined):
 
 | Risk | Mitigation |
 |---|---|
-| NSE blocks automated downloads | Download the 10–15 filings and their XBRL by hand; keep URLs in the manifest |
+| NSE blocks automated downloads | Download the filings and their XBRL by hand (24 + 24 in the corpus); keep URLs in the manifest |
 | Gemini free-tier rate limits | Cache responses, process in batches with backoff, extract per section |
-| Docling is slow on CPU | Run it once, keep silver output in Delta, never parse the same file twice |
+| Docling is slow on CPU | Run it once, keep silver output in Delta, never parse the same file twice. *Measured: 2.08 h for 24 filings / 1,688 pages; re-run is a no-op.* |
 | BRSR table layouts differ between companies | Evaluation per field shows where; add few-shot examples for the worst fields |
 | Scope creeps past 4 weeks | This brief's out-of-scope list is binding; new ideas go in `docs/next.md` |
 

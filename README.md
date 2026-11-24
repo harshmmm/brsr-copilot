@@ -21,6 +21,8 @@ cp .env.example .env   # add your GEMINI_API_KEY
 uv run brsr parse --parser docling   # PDFs -> data/silver/{pages,tables,parse_runs}
 ```
 
+Unchanged filings are skipped (keyed by file sha256 + parser version); `--force` reparses. Long runs show a page-weighted progress bar with ETA.
+
 ## Latest evaluation
 
 **PDF parser comparison** (2026-11-16, [report](eval/reports/parser_compare_20261116-192521.md), decision [D006](docs/decisions.md)): scored against each filing's own XBRL.
@@ -34,7 +36,12 @@ uv run brsr parse --parser docling   # PDFs -> data/silver/{pages,tables,parse_r
 
 All misses shared by both parsers are PDF/XBRL disagreements, verified by hand. Full corpus parsed with Docling: 24 filings, 1,688 pages, 2,812 tables, 2.1 h on a laptop CPU.
 
-Build history and every decision: [docs/build_log.md](docs/build_log.md).
+## Docs
+
+- [docs/brief.md](docs/brief.md) — problem, scope, metrics, milestones
+- [docs/build_log.md](docs/build_log.md) — what has been built, step by step, with reasons
+- [docs/decisions.md](docs/decisions.md) — design decisions D001–D006 with options and measurements
+- [docs/next.md](docs/next.md) — open questions and parked ideas
 
 ## Development
 

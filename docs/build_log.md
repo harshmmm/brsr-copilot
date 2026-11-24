@@ -4,7 +4,7 @@ What has been built, milestone by milestone, with every decision and the reason 
 Full reasoning and measurements for each decision are in [decisions.md](decisions.md) (D001…);
 ideas and open questions are in [next.md](next.md). Update this file at the end of each step.
 
-**Status (2026-11-24):** M0 and M1 done. Next: M2 plan.
+**Status (2026-11-25):** M0 and M1 done, plus a progress bar for `brsr parse`. Next: M2 plan (XBRL → `xbrl_facts`, LLM extraction → gold).
 
 | Milestone | Scope | Status |
 |---|---|---|
@@ -144,3 +144,15 @@ full run, parse only PDFs present on disk and list missing ones instead of faili
 
 ## Test and lint status
 65 tests pass; `ruff check` and `ruff format --check` are clean (end of M1).
+
+---
+
+## Documentation (2026-11-25)
+- `README.md`: pipeline command, latest evaluation summary, links to all docs.
+- `docs/brief.md`: outcomes recorded inline (parser = Docling, pyarrow in the stack, measured
+  Docling run time, boundary question still open); the plan itself is unchanged.
+- `docs/next.md`: open questions for M2 — BRSR section detection (Hindi and near-empty pages),
+  boundary default, XBRL taxonomy versions and Inline XBRL, Docling table warnings, PDF/XBRL
+  disagreements, hybrid parsing.
+- `CLAUDE.md`: working rules added — keep this log updated each step; long-running commands
+  show a progress bar; `python -m uv` on this laptop.

@@ -3,8 +3,8 @@
 Things that are out of scope for the current milestone. Not commitments.
 
 ## Open questions for later milestones
-- **Boundary default (M2).** The brief says to default comparisons to standalone. But TCS, Infosys, Tech Mahindra, Persistent and LTIMindtree report only on a consolidated basis, while all banks and Coforge report standalone. A "standalone by default" rule would drop most of the IT sector. Decide once extraction shows which filings give both.
-- **Where the BRSR starts (M1).** Some PDFs carry other content first: Bank of Baroda FY 2024-25 Section A starts on page 106 of 187; Indian Bank puts a Hindi version before the English one; several NSE copies have a cover letter on page 1.
+- **Boundary default (M2).** The brief says to default comparisons to standalone. But TCS, Infosys, Tech Mahindra, Persistent and LTM (formerly LTIMindtree) report only on a consolidated basis, while all banks and Coforge report standalone. A "standalone by default" rule would drop most of the IT sector. Decide once extraction shows which filings give both.
+- **Where the BRSR starts (M2).** Some PDFs carry other content first: Bank of Baroda FY 2024-25 Section A starts on page 106 of 187; Indian Bank puts a Hindi version before the English one; several NSE copies have a cover letter on page 1. The full Docling parse found 332 mostly-Hindi pages (devanagari_ratio > 0.3) and 29 near-empty pages (< 50 characters) that section detection should skip.
 - **Source URLs to replace with NSE originals:** Federal Bank FY 2024-25 (Business Standard copy). Infosys FY 2024-25 URL could not be verified (site returns 403 to scripts).
 - **XBRL taxonomy versions differ (M2).** Three `in-capmkt-ent` versions in the corpus: 2024-04-30 (Indian Bank and Bank of Baroda FY 2024-25), 2025-05-31 (other FY 2024-25 filings) and 2026-02-28 (all FY 2025-26). The XBRL parser must map element names across versions; `NSESymbol` exists only in 2026-02-28.
 - **XBRL source URLs are the NSE listing page**, not per-file links, because NSE's archive path for XBRL files wasn't confirmed. Replace them if direct links turn up.
@@ -15,4 +15,6 @@ Things that are out of scope for the current milestone. Not commitments.
   Axis FY 2025-26 never prints the Scope 1 total (only CO2/CH4/N2O, which sum to the XBRL's 11,644.43).
   The ±2% extraction tolerance absorbs the first two; the Axis case means some XBRL totals must be derived, not found.
 - **BRSR section detection (M2).** Tag each silver page with its BRSR section/principle so extraction can run per section (brief decision 2). Deferred from M1.
-- **Hybrid parsing (D006 option 3).** Parse with PyMuPDF (~9× faster) and fall back to Docling only for pages whose tables lack ruling lines. Needs a measured test for "no grid lines" first; only worth it if the corpus grows a lot.
+- **Docling table warnings (M2/M3).** The full parse logged 4 tables whose structure was discarded at the decode limit (text kept as one cell; the log does not name the filing, so find them by tables with a single cell) and 84 warnings about cells dropped because they fit no row or column. Check whether any Principle 6 metric sits in one of these tables when extraction accuracy comes in.
+- **Progress within a filing.** `brsr parse`'s bar moves once per filing, so a 10-minute filing shows no movement. Docling doesn't expose per-page progress; revisit only if it becomes annoying.
+- **Hybrid parsing (D006 option 3). Parse with PyMuPDF (~9× faster) and fall back to Docling only for pages whose tables lack ruling lines. Needs a measured test for "no grid lines" first; only worth it if the corpus grows a lot.

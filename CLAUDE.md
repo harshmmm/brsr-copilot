@@ -31,8 +31,9 @@ tests/
 ```
 
 ## Commands (once set up)
+- On Harsh's laptop `uv` isn't on PATH: use `python -m uv …` in place of `uv …`.
 - `uv sync` · `uv run pytest` · `uv run ruff check . && uv run ruff format .`
-- `uv run brsr ingest|parse|extract|index` — pipeline stages (Typer CLI)
+- `uv run brsr ingest|parse|extract|index` — pipeline stages (Typer CLI); parse with `--parser docling` (D006)
 - `uv run python eval/run_extraction.py` · `eval/run_retrieval.py` · `eval/run_router.py`
 - `uv run streamlit run app/streamlit_app.py`
 
@@ -42,6 +43,7 @@ tests/
 3. When we make a design choice, add an entry to `docs/decisions.md`: the context, the options, what we chose and why. Include measured numbers whenever we compared options.
 4. Keep changes small and reviewable. Run tests and ruff before saying a task is done.
 5. Explain non-obvious code in your reply, not in long comments. I want to be able to defend every line in an interview.
+6. At the end of each step, update `docs/build_log.md` (what was built, decisions with reasons, problems, results) and any other doc the step makes stale.
 
 ## Engineering rules
 - **The LLM extracts; code decides.** The LLM returns `value_raw`, `unit_raw` and `source_page`. Unit conversion and derived values (intensities, percentages) happen in `units.py` with unit tests.
@@ -53,6 +55,7 @@ tests/
 - **Never edit `eval/gold_labels/` or test sets to make a score go up.** If a label is wrong, fix it in a separate commit with a reason.
 - **Store evaluation reports** under `eval/reports/` with a timestamp, and put the latest summary in the README.
 - No secrets in code. Use `.env` (gitignored) and keep `.env.example` up to date.
+- **Long-running commands show a terminal progress bar with ETA** (`typer.progressbar`, weighted by the real unit of work, e.g. pages).
 - Type hints everywhere; small pure functions; pytest for parsers, units, router and the cache.
 
 ## Data notes
