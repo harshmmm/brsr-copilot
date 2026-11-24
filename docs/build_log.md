@@ -156,3 +156,15 @@ full run, parse only PDFs present on disk and list missing ones instead of faili
   disagreements, hybrid parsing.
 - `CLAUDE.md`: working rules added — keep this log updated each step; long-running commands
   show a progress bar; `python -m uv` on this laptop.
+
+---
+
+## Side task — LinkedIn parser image (2026-11-25, outside milestones)
+- Two-panel HTML of the Axis FY 2025-26 page 32 energy table as stored in silver: PyMuPDF
+  (6 of 6 energy rows broken) vs Docling (6 of 6 intact), plus a 200 dpi PNG of the full page.
+  Stored cells shown exactly as-is; highlighted rows come from the M1 row check, not by hand.
+- Finding: the M1 "1/8 vs 8/8" Axis result is filing-wide (three tables on pp. 32, 34, 38);
+  page 32 holds 6 of the 8 rows. Silver stores no table bounding box, so no crop.
+- No pipeline code changed, nothing reparsed. Outputs and the script are in the gitignored
+  `data/scratch/linkedin/`.
+
