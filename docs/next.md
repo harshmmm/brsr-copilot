@@ -15,3 +15,4 @@ Things that are out of scope for the current milestone. Not commitments.
   Axis FY 2025-26 never prints the Scope 1 total (only CO2/CH4/N2O, which sum to the XBRL's 11,644.43).
   The ±2% extraction tolerance absorbs the first two; the Axis case means some XBRL totals must be derived, not found.
 - **BRSR section detection (M2).** Tag each silver page with its BRSR section/principle so extraction can run per section (brief decision 2). Deferred from M1.
+- **Hybrid parsing (D006 option 3).** Parse with PyMuPDF (~9× faster) and fall back to Docling only for pages whose tables lack ruling lines. Needs a measured test for "no grid lines" first; only worth it if the corpus grows a lot.

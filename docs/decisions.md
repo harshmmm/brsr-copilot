@@ -71,3 +71,28 @@ One entry per design choice: context, options, choice, and why. Include measured
 **Choice.** Option 3: `pyarrow==26.0.1`.
 
 **Why.** We build Arrow tables ourselves before writing to Delta, and DuckDB reads Delta back through Arrow, so `pyarrow` is a direct dependency, not an incidental one. Pinning it exactly keeps the Arrow-to-Delta type mapping stable between runs (e.g. `string` vs `large_string` vs `string_view`). A silent change there alters the Delta table schema and makes a later overwrite fail with a schema mismatch, or worse, makes two runs produce different files. Upgrades will be deliberate: bump the pin, rerun the tests and one parse, and commit.
+
+---
+
+## D006 — Parse PDFs with Docling (M1, 2026-11-24)
+
+**Context.** M2 extracts metrics from the PDFs, mostly from tables (Principle 6 energy, emissions, water, waste). The parser must keep each table row's label, current-year value and previous-year value in separate cells of one row. A merged or shifted row puts a value under the wrong label with no error raised.
+
+**Options.** (1) PyMuPDF `find_tables` (ruling-line detection). (2) Docling with TableFormer (ACCURATE mode), OCR off since the PDFs are digital. (3) PyMuPDF with a Docling fallback for tables without grid lines (not built).
+
+**Method.** Three filings, scored against their own XBRL: TCS FY 2024-25 and Axis FY 2025-26 together, and Bank of Baroda FY 2024-25 separately (its Hindi/English pages would skew the averages). (a) Recall: share of distinct XBRL values (≥ 3 significant digits, current and previous year) found in the parsed text after normalising Indian/Western digit grouping and allowing rounding to the printed decimals. (b) Row integrity: Principle 6 rows where a label cell is followed by the current-year and then the previous-year value, each in its own cell. (c) Wall-clock seconds per filing on a laptop CPU, model loading excluded (`warmup()`). Report: `eval/reports/parser_compare_20261116-192521.md`.
+
+| | Recall | Rows intact | s/filing | s/page |
+|---|---|---|---|---|
+| TCS + Axis, PyMuPDF | 75/78 (96%) | 10/19 (53%) | 31.9 | 0.72 |
+| TCS + Axis, Docling | 75/78 (96%) | 17/19 (89%) | 289.9 | 6.51 |
+| Bank of Baroda, PyMuPDF | 27/29 (93%) | 6/8 (75%) | 87.0 | 0.46 |
+| Bank of Baroda, Docling | 27/29 (93%) | 6/8 (75%) | 834.8 | 4.46 |
+
+Every miss shared by both parsers was checked by hand and is a PDF/XBRL disagreement, not a parse error (TCS total energy off by 1; two Bank of Baroda values off by 0.01; Axis never prints its Scope 1 total — see `docs/next.md`). Excluding those, both parsers find every value and keep every TCS and Bank of Baroda row intact. The gap is Axis: its tables have almost no ruling lines, so PyMuPDF merges cells (1/8 rows intact) while Docling gets 8/8.
+
+**Choice.** Option 2, Docling, `docling-2.150.1-noocr-tableformer-accurate`.
+
+**Why.** Row integrity is what extraction depends on, and PyMuPDF fails silently on line-less tables. Docling costs ~9× the CPU time, but parsing is a one-off: silver output is keyed by file sha256 + parser version, so unchanged filings are never reparsed. Option 3 would be faster but needs a reliable "has no grid lines" test that we haven't measured; noted in `next.md`.
+
+**Findings along the way.** PyMuPDF's `Table.extract()` garbles BRSR cells ("20,494.8" → "204948 , ."); reading each cell with `page.get_text(clip=cell)` fixes it, and the version string carries `-cellclip`. Docling logs occasional dropped cells and discarded table structures on Bank of Baroda; M2 extraction must keep `source_page` so those can be traced. The parser options are part of `parser_version`, so changing them invalidates silver output.
