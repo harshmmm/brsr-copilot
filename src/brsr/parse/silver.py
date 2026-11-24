@@ -156,27 +156,46 @@ def parse_filings(
     parser_version: str,
     force: bool = False,
     log: Callable[[str], None] = print,
+    done: Callable[[ManifestRow], None] = lambda row: None,
 ) -> ParseReport:
-    """Parse every PDF row whose file is present and unchanged; report the rest."""
+    """Parse every PDF row whose file is present and unchanged; report the rest.
+
+    `done(row)` is called once per row, whatever happened to it (for progress display).
+    """
     report = ParseReport([], [], [], [])
     for row in rows:
-        label = f"{row.company_id} {row.fy}"
-        path = bronze / row.file_path
-        if not path.is_file():
-            report.missing.append(f"{label}: {row.file_path}")
-            continue
-        sha = sha256_file(path)
-        if sha != row.sha256:
-            report.changed.append(f"{label}: {row.file_path}")
-            continue
-        f = Filing(row.company_id, row.fy, sha)
-        if not force and already_parsed(silver, f, parser, parser_version):
-            report.skipped.append(label)
-            continue
-        start = time.perf_counter()
-        doc = parse_fn(path)
-        seconds = time.perf_counter() - start
-        write_filing(silver, f, doc, seconds)
-        log(f"  {label}: {len(doc.pages)} pages, {len(doc.tables)} tables, {seconds:.1f}s")
-        report.parsed.append(label)
+        _parse_one(row, bronze, silver, parse_fn, parser, parser_version, force, log, report)
+        done(row)
     return report
+
+
+def _parse_one(
+    row: ManifestRow,
+    bronze: Path,
+    silver: Path,
+    parse_fn: Callable[[Path], ParsedDoc],
+    parser: str,
+    parser_version: str,
+    force: bool,
+    log: Callable[[str], None],
+    report: ParseReport,
+) -> None:
+    label = f"{row.company_id} {row.fy}"
+    path = bronze / row.file_path
+    if not path.is_file():
+        report.missing.append(f"{label}: {row.file_path}")
+        return
+    sha = sha256_file(path)
+    if sha != row.sha256:
+        report.changed.append(f"{label}: {row.file_path}")
+        return
+    f = Filing(row.company_id, row.fy, sha)
+    if not force and already_parsed(silver, f, parser, parser_version):
+        report.skipped.append(label)
+        return
+    start = time.perf_counter()
+    doc = parse_fn(path)
+    seconds = time.perf_counter() - start
+    write_filing(silver, f, doc, seconds)
+    log(f"  {label}: {len(doc.pages)} pages, {len(doc.tables)} tables, {seconds:.1f}s")
+    report.parsed.append(label)

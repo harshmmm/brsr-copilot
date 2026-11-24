@@ -118,3 +118,22 @@ def test_missing_and_changed_files_are_listed_not_fatal(bronze: Path, tmp_path: 
     assert report.parsed == ["TCS 2024-25"]
     assert report.missing == ["TCS 2024-25: filings/absent.pdf"]
     assert report.changed == ["TCS 2025-26: filings/tcs_2024-25.pdf"]
+
+
+def test_done_is_called_once_per_row_whatever_the_outcome(bronze: Path, tmp_path: Path) -> None:
+    ok = manifest_row(bronze)
+    missing = manifest_row(bronze, "absent.pdf")
+    seen: list[str] = []
+    silver = tmp_path / "silver"
+    for _ in range(2):  # second pass: `ok` is skipped as already parsed
+        parse_filings(
+            [missing, ok],
+            bronze,
+            silver,
+            pdf_pymupdf.parse,
+            pdf_pymupdf.NAME,
+            pdf_pymupdf.version(),
+            log=lambda _: None,
+            done=lambda r: seen.append(r.file_path),
+        )
+    assert seen == ["filings/absent.pdf", "filings/tcs_2024-25.pdf"] * 2

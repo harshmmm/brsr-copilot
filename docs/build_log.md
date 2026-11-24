@@ -125,6 +125,14 @@ full run, parse only PDFs present on disk and list missing ones instead of faili
   kept as a single cell) and 84 warnings about cells that fit no row or column and were dropped.
   Extraction keeps `source_page`, so any wrong value can be traced back to its page.
 
+### After M1 — progress bar for `brsr parse` (2026-11-25)
+- `brsr parse` shows a page-weighted progress bar with ETA (Typer's built-in bar, no new
+  dependency). Weighted by pages because parse time scales with pages: SBI's 168-page filing
+  takes ~5× as long as LTM's 31-page one. Per-filing lines print above the bar.
+- `parse_filings` takes a `done(row)` callback, called once per filing whether it was parsed,
+  skipped or missing, so the bar always reaches 100%. Tested.
+- When output isn't a terminal (logs, CI), the bar is reduced to its label and lines stay clean.
+
 ### Other problems fixed in M1
 - Ruff B008 on Typer defaults → `Annotated[...]` options.
 - DuckDB 2.0 renamed `fetch_arrow_table` → `to_arrow_table`.
@@ -135,4 +143,4 @@ full run, parse only PDFs present on disk and list missing ones instead of faili
 ---
 
 ## Test and lint status
-64 tests pass; `ruff check` and `ruff format --check` are clean (end of M1).
+65 tests pass; `ruff check` and `ruff format --check` are clean (end of M1).

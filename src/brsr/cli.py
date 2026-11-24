@@ -19,6 +19,16 @@ class Parser(StrEnum):
     docling = "docling"
 
 
+def _page_count(path: Path) -> int:
+    """Pages in a PDF, or 0 if it's missing (missing files are reported, not parsed)."""
+    import pymupdf
+
+    if not path.is_file():
+        return 0
+    with pymupdf.open(path) as doc:
+        return doc.page_count
+
+
 @app.callback()
 def main() -> None:
     """BRSR copilot pipeline."""
@@ -83,12 +93,31 @@ def parse(
         typer.echo("No PDF rows match the filters.", err=True)
         raise typer.Exit(2)
 
-    typer.echo(f"Parsing {len(rows)} PDF(s) with {mod.version()}")
+    pages = {r.file_path: _page_count(manifest.parent / r.file_path) for r in rows}
+    typer.echo(f"Parsing {len(rows)} PDF(s), {sum(pages.values())} pages, with {mod.version()}")
     if hasattr(mod, "warmup"):
         mod.warmup()  # keep one-off model loading out of the per-filing timings
-    report = parse_filings(
-        rows, manifest.parent, silver, mod.parse, mod.NAME, mod.version(), force, typer.echo
-    )
+
+    # Page-weighted, so the ETA reflects that a 168-page filing takes longer than a 31-page one.
+    with typer.progressbar(
+        length=max(1, sum(pages.values())), label="Pages", show_pos=True, show_eta=True
+    ) as bar:
+
+        def log(line: str) -> None:
+            typer.echo("\r\x1b[2K" + line)  # clear the bar's line, print, then redraw the bar
+            bar.render_progress()
+
+        report = parse_filings(
+            rows,
+            manifest.parent,
+            silver,
+            mod.parse,
+            mod.NAME,
+            mod.version(),
+            force,
+            log,
+            done=lambda r: bar.update(pages[r.file_path]),
+        )
     typer.echo(f"Parsed {len(report.parsed)}, already up to date {len(report.skipped)}.")
     for title, items in (("Missing", report.missing), ("Changed since hashed", report.changed)):
         if items:
